@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ersin | Masraf Envanteri</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #121212; color: #e0e0e0; font-family: 'Inter', sans-serif; }
+        .glass-card { background: rgba(30, 30, 30, 0.8); border: 1px solid #333; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .accent-border { border-left: 4px solid #00d2d3; }
+        .btn-primary { background: #00d2d3; color: #121212; transition: all 0.3s ease; }
+        .btn-primary:hover { background: #01a3a4; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0, 210, 211, 0.3); }
+        .input-dark { background: #1e1e1e; border: 1px solid #333; color: white; outline: none; }
+        .input-dark:focus { border-color: #00d2d3; }
+        tr:hover { background: rgba(255,255,255,0.02); }
+    </style>
+</head>
+<body class="p-4 md:p-10">
+
+    <div class="max-w-5xl mx-auto">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-10 gap-4">
+            <div>
+                <h1 class="text-4xl font-black tracking-tighter text-gray-400">MASRAF <span class="text-cyan-400 font-light">ENVANTERİ</span></h1>
+                <p class="text-xs text-gray-500 mt-1 uppercase tracking-widest">Kullanıcı: Ersin | Genel Muhasebe</p>
+            </div>
+            <div class="flex gap-4">
+                <div class="glass-card px-6 py-3 rounded-lg text-center">
+                    <span class="block text-[10px] text-gray-500 uppercase">Toplam Harcama</span>
+                    <span id="totalDisplay" class="text-xl font-bold text-cyan-400">0.00 ₺</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="glass-card p-8 rounded-2xl mb-10 accent-border">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-6">
+                <div class="md:col-span-2">
+                    <label class="text-[10px] font-bold text-gray-500 mb-2 block uppercase">Harcama Kalemi / Açıklama</label>
+                    <input type="text" id="desc" class="input-dark w-full p-3 rounded-lg" placeholder="Örn: Sunucu Gideri, Ofis Malzemesi...">
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 mb-2 block uppercase">Kategori</label>
+                    <select id="cat" class="input-dark w-full p-3 rounded-lg cursor-pointer">
+                        <option>Ofis Gideri</option>
+                        <option>Yazılım/Teknoloji</option>
+                        <option>Ulaşım</option>
+                        <option>Kişisel/Diğer</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="text-[10px] font-bold text-gray-500 mb-2 block uppercase">Tutar (₺)</label>
+                    <input type="number" id="amount" class="input-dark w-full p-3 rounded-lg" placeholder="0.00">
+                </div>
+            </div>
+            <button onclick="addItem()" class="btn-primary w-full mt-6 py-4 rounded-xl font-black text-sm tracking-widest uppercase">
+                <i class="fas fa-plus mr-2"></i> ENVANTERE İŞLE
+            </button>
+        </div>
+
+        <div class="glass-card rounded-2xl overflow-hidden shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h2 class="text-sm font-bold text-gray-400 uppercase tracking-widest">Son Hareketler</h2>
+                <button onclick="exportExcel()" class="text-[10px] bg-gray-800 px-3 py-1 rounded text-gray-400 hover:text-white transition">VERİLERİ DIŞA AKTAR</button>
+            </div>
+            <div class="overflow-x-auto">
+                <table class="w-full text-left">
+                    <thead class="bg-black/20 text-[10px] uppercase text-gray-500">
+                        <tr>
+                            <th class="p-5">Tarih</th>
+                            <th class="p-5">Harcama Kalemi</th>
+                            <th class="p-5">Kategori</th>
+                            <th class="p-5 text-right">Tutar</th>
+                            <th class="p-5 text-center">İşlem</th>
+                        </tr>
+                    </thead>
+                    <tbody id="listBody" class="text-sm">
+                        </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let expenses = JSON.parse(localStorage.getItem('ersin_expenses')) || [];
+
+        function addItem() {
+            const desc = document.getElementById('desc').value;
+            const amount = document.getElementById('amount').value;
+            const cat = document.getElementById('cat').value;
+
+            if (desc && amount) {
+                const item = {
+                    id: Date.now(),
+                    date: new Date().toLocaleDateString('tr-TR'),
+                    desc,
+                    cat,
+                    amount: parseFloat(amount)
+                };
+                expenses.unshift(item);
+                saveAndRender();
+                document.getElementById('desc').value = '';
+                document.getElementById('amount').value = '';
+            }
+        }
+
+        function deleteItem(id) {
+            expenses = expenses.filter(e => e.id !== id);
+            saveAndRender();
+        }
+
+        function saveAndRender() {
+            localStorage.setItem('ersin_expenses', JSON.stringify(expenses));
+            render();
+        }
+
+        function render() {
+            const body = document.getElementById('listBody');
+            const totalDisplay = document.getElementById('totalDisplay');
+            let total = 0;
+            body.innerHTML = '';
+
+            expenses.forEach(e => {
+                total += e.amount;
